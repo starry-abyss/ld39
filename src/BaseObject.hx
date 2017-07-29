@@ -38,10 +38,23 @@ class BaseObject extends Sprite
 	
 	public function update(dt: Float)
 	{
-		x += velocity.x * dt;
-		y += velocity.y * dt;
+		if (visible)
+		{
+			x += velocity.x * dt;
+			y += velocity.y * dt;
+		}
 		
 		//trace(velocity);
+	}
+	
+	public function addVelocity(direction: Point, speed: Float, dt: Float)
+	{
+		var sign = speed > 0 ? 1 : -1;
+		speed = Math.abs(speed);
+		
+		direction.normalize(Ship.speed * dt);
+
+		velocity.setTo(velocity.x + sign * direction.x, velocity.y + sign * direction.y);
 	}
 	
 }

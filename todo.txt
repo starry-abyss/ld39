@@ -1,0 +1,21 @@
++ power decrease on movement
++ asteroids
+
+- mouse released outside window not noticed
+- object collision response
+- sound looping
+- gui and tutorials are scrolled
+- no win condition
+- no gameplay :D
+
+- sounds:
+	magnetize
+	asteroid collide
+	pick up powerup
+	accelerate
+	lose
+	win
+
+- maintain the old speed when magnetizing (add velocity, not override), same for ship
+- implement rotationSpeed (now instant)
+- tutorial
