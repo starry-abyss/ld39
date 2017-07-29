@@ -9,7 +9,9 @@ import openfl.display.Bitmap;
  */
 class PowerUp extends BaseObject 
 {
-
+	public inline static var speed = 200.0;
+	public inline static var power = 100.0;
+	
 	public function new() 
 	{
 		var bitmapData = Assets.getBitmapData("img/power_up.png");
