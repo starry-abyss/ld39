@@ -1,0 +1,10 @@
+bin/*
+**.asd
+**/*.png\~
+**/*.json\~
+**/*.tmx\~
+**/*.kra\~
+**/*-autosave.kra
+**/*-go*-here.txt
+*.hxproj
+*Backup.MuProject
