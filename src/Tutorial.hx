@@ -18,14 +18,14 @@ class Tutorial extends TextField
 		super();
 		
 #if js
-		var textFormat = new TextFormat("Exo 2 Extra Light Regular Webfont", 80, 0xffffffff);
+		var textFormat = new TextFormat("Exo 2 Regular Webfont", 72, 0xffffffff);
 #else
-		var textFormat = new TextFormat("font/Exo2-ExtraLight-webfont.ttf", 80, 0xffffffff);
+		var textFormat = new TextFormat("font/Exo2-Regular-webfont.ttf", 72, 0xffffffff);
 #end
 
 		textFormat.align = CENTER;
 		setTextFormat(textFormat);
-		
+
 		//multiline = true;
 		
 		selectable = false;

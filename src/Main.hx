@@ -48,12 +48,25 @@ class Main extends Sprite
 	var hpLabel: TextField;
 	
 	var music: Sound;
+	var musicChannel: SoundChannel;
 	
 	var tutorialAccelerate: Tutorial;
 	var tutorialMagnetize: Tutorial;
 	
 	var accelerateSound: Sound;
 	var magnetizeSound: Sound;
+	
+	var accelerateSoundChannel: SoundChannel;
+	var magnetizeSoundChannel: SoundChannel;
+	
+	var blackHole: BlackHole;
+	
+	var cinematicMode: Bool;
+	var cinematic: Cinematic;
+	
+	var overlay: Sprite;
+	
+	var targetPointer: Pointer;
 
 	public function new() 
 	{
@@ -62,9 +75,11 @@ class Main extends Sprite
 		//width = baseWidth;
 		//height = baseHeight;
 		
+		overlay = new Sprite();
+		
 		music = Assets.getSound("music/main_track.ogg");
-		var channel: SoundChannel = music.play(0, 100000);
-		channel.soundTransform = new SoundTransform(0.3);
+		musicChannel = music.play(0, 100000);
+		musicChannel.soundTransform = new SoundTransform(0.1);
 		
 		for (i in 0...5)
 		{
@@ -76,6 +91,14 @@ class Main extends Sprite
 			//stage.addChildAt(stars, 0);
 			addChild(stars);
 		}
+		
+				
+		blackHole = new BlackHole();
+		blackHole.x = baseWidth * 2;
+		blackHole.y = baseHeight / 2 /*- blackHole.height / 2*/;
+		
+		addChild(blackHole);
+		
 		
 		powerUps = new DisplayObjectContainer();
 		asteroids = new DisplayObjectContainer();
@@ -92,7 +115,7 @@ class Main extends Sprite
 		addChild(asteroids);
 		
 		
-		gun = new Gun(Main.baseWidth, 90);
+		gun = new Gun(Main.baseWidth, 70);
 		addChild(gun);
 		//gun.x -= bitmapData.width / 2;
 
@@ -116,9 +139,9 @@ class Main extends Sprite
 		
 		
 #if js
-		var textFormat = new TextFormat("Exo 2 Extra Light Regular Webfont", 72, 0xffffffff);
+		var textFormat = new TextFormat("Exo 2 Regular Webfont", 72, 0xffffffff);
 #else
-		var textFormat = new TextFormat("font/Exo2-ExtraLight-webfont.ttf", 72, 0xffffffff);
+		var textFormat = new TextFormat("font/Exo2-Regular-webfont.ttf", 72, 0xffffffff);
 #end
 		
 		powerLabel = createTextField(textFormat);
@@ -126,8 +149,8 @@ class Main extends Sprite
 		hpLabel = createTextField(textFormat);
 		hpLabel.y += 100;
 		
-		addChild(powerLabel);
-		addChild(hpLabel);
+		overlay.addChild(powerLabel);
+		overlay.addChild(hpLabel);
 
 		
 		stage.showDefaultContextMenu = false;
@@ -139,9 +162,11 @@ class Main extends Sprite
 		
 		tutorialMagnetize.text = "Aim mouse and hold LMB to magnetize objects";
 		
-		addChild(tutorialAccelerate);
-		addChild(tutorialMagnetize);
+		targetPointer = new Pointer();
 		
+		overlay.addChild(tutorialAccelerate);
+		overlay.addChild(tutorialMagnetize);
+		overlay.addChild(targetPointer);
 		
 		ship.hpChangedCallback = 
 			function ()
@@ -150,7 +175,16 @@ class Main extends Sprite
 				
 				if (ship.hp <= 0)
 				{
-					restartGame();
+					var loseSound = Assets.getSound("sound/lose.wav");
+					loseSound.play();
+					
+					cinematicMode = true;
+					
+					cinematic.reset(restartGame);
+					cinematic.addPage("Press LMB to play again!", "crash");
+					cinematic.nextPage();
+					
+					//restartGame();
 				}
 			};
 			
@@ -170,18 +204,41 @@ class Main extends Sprite
 		accelerateSound = Assets.getSound("sound/accelerate.wav");
 		magnetizeSound = Assets.getSound("sound/magnetize.wav");
 		
-		restartGame(false);
+		restartGame();
 		
 		//this.scrollRect = new Rectangle(0, 0, baseWidth, baseHeight);
+		
+		stage.addChild(overlay);
+		
+		cinematic = new Cinematic();
+		overlay.addChild(cinematic);
 	}
 	
-	function restartGame(lose: Bool = true)
+	function restartGame(/*lose: Bool = true*/)
 	{
-		if (lose)
+		if (accelerateSoundChannel != null)
 		{
-			var loseSound = Assets.getSound("sound/lose.wav");
-			loseSound.play();
+			accelerateSoundChannel.stop();
+			accelerateSoundChannel = null;
 		}
+		
+		if (magnetizeSoundChannel != null)
+		{
+			magnetizeSoundChannel.stop();
+			magnetizeSoundChannel = null;
+		}
+		
+		/*if (lose)
+		{
+			
+		}*/
+		
+		hpLabel.visible = true;
+		powerLabel.visible = true;
+		targetPointer.visible = true;
+		
+		tutorialAccelerate.update(0);
+		tutorialMagnetize.update(0);
 		
 		// quick hack for asteroids spawning at player at start
 		ship.hp = 10000.0;
@@ -194,10 +251,23 @@ class Main extends Sprite
 		
 		ship.power = 0.0;
 		ship.velocity.setTo(0, 0);
+		
+		cinematicMode = false;
+		
+		musicChannel.soundTransform = new SoundTransform(0.3);
 	}
 	
 	function winGame()
 	{
+		cinematicMode = true;
+		
+		cinematic.reset(restartGame);
+		cinematic.addPage("Made by crazy squirrels in 48 hours for LD 39 jam :-)", "credits");
+		cinematic.addPage("Press LMB to play again!");
+		cinematic.nextPage();
+		
+		musicChannel.soundTransform = new SoundTransform(0.1);
+		
 		var winSound = Assets.getSound("sound/win.wav");
 		winSound.play();
 	}
@@ -262,6 +332,11 @@ class Main extends Sprite
 	function onMouseDown(event: MouseEvent)
 	{
 		leftMouseButton = event.buttonDown;
+		
+		if (cinematicMode)
+		{
+			cinematic.nextPage();
+		}
 	}
 	
 	function onMouseUp(event: MouseEvent)
@@ -281,6 +356,9 @@ class Main extends Sprite
 	
 	function onResize(_)
 	{
+		//leftMouseButton = false;
+		//rightMouseButton = false;
+		
 		var scaleX = Lib.application.window.width / baseWidth;
 		var scaleY = Lib.application.window.height / baseHeight;
 		var scale = Math.min(scaleX, scaleY);
@@ -300,6 +378,12 @@ class Main extends Sprite
 		//this.scrollRect.setTo(0, 0, baseWidth, baseHeight);
 		//stars.scaleX = 4;
 		//stars.scaleY = 4;
+		
+		overlay.x = this.x;
+		overlay.y = this.y;
+		
+		overlay.scaleX = this.scaleX;
+		overlay.scaleY = this.scaleY;
 	}
 	
 	function onEnterFrame(_)
@@ -310,8 +394,20 @@ class Main extends Sprite
 		
 		gun.visible = false;
 		
-		//if (leftMouseButton)
-		//{
+		var playAccelerateSound = false;
+		var playMagnetizeSound = false;
+		
+		visible = !cinematicMode;
+		cinematic.visible = cinematicMode;
+
+		if (!cinematicMode)
+		{
+			if (objectOverlap(ship, blackHole))
+			{
+				winGame();
+				return;
+			}
+			
 			//leftMouseButton = false;
 			
 			tempPoint.setTo(stage.mouseX, stage.mouseY);
@@ -331,7 +427,7 @@ class Main extends Sprite
 				
 				if (leftMouseButton)
 				{
-					magnetizeSound.play();
+					playMagnetizeSound = true;
 					
 					//var gun = ship.gun;
 					gun.rotation = ship.rotation;
@@ -387,7 +483,7 @@ class Main extends Sprite
 					}
 				}
 				
-				if (rightMouseButton && ship.power > 0)
+				if (rightMouseButton /*&& ship.power > 0*/)
 				//if (rightMouseButton)
 				{
 					tutorialAccelerate.update(dt);
@@ -415,82 +511,122 @@ class Main extends Sprite
 					
 					if (countVisible > 0)
 					{
-						accelerateSound.play();
+						playAccelerateSound = true;
 					}
 				}
 			}
 
-		//}
 
-		for (i in 0...powerUps.numChildren)
-		{
-			var powerUp: PowerUp = cast powerUps.getChildAt(i);
-			powerUp.update(dt);
-			
-			if (powerUp.visible == false)
-				continue;
-					
-			// pick up the power up
-			if (objectOverlap(ship, powerUp))
+			for (i in 0...powerUps.numChildren)
 			{
-				ship.power += PowerUp.power;
-				powerUp.visible = false;
+				var powerUp: PowerUp = cast powerUps.getChildAt(i);
+				powerUp.update(dt);
 				
-				if (ship.hp < 1000)
-					Assets.getSound("sound/powerup.wav").play();
-			}
-		}
-		
-		for (i in 0...asteroids.numChildren)
-		{
-			var asteroid: Asteroid = cast asteroids.getChildAt(i);
-			asteroid.update(dt);
-			
-			if (asteroid.visible == false)
-				continue;
-					
-			// pick up the power up
-			if (objectOverlap(ship, asteroid))
-			{
-				ship.hp -= Asteroid.damage;
-				asteroid.visible = false;
-				
-				if (ship.hp < 1000)
-					Assets.getSound("sound/asteroid.wav").play();
-			}
-			else
-			{
-				for (j in 0...asteroids.numChildren)
+				if (powerUp.visible == false)
+					continue;
+						
+				// pick up the power up
+				if (objectOverlap(ship, powerUp))
 				{
-					var asteroid2: Asteroid = cast asteroids.getChildAt(j);
-					asteroid.update(dt);
+					ship.power += PowerUp.power;
+					powerUp.visible = false;
 					
-					if (asteroid.visible == false)
-						continue;
-							
-					// asteroid collision
-					if (asteroid != asteroid2 && objectOverlap(asteroid, asteroid2))
+					if (ship.hp < 1000)
+						Assets.getSound("sound/powerup.wav").play();
+				}
+			}
+			
+			for (i in 0...asteroids.numChildren)
+			{
+				var asteroid: Asteroid = cast asteroids.getChildAt(i);
+				asteroid.update(dt);
+				
+				if (asteroid.visible == false)
+					continue;
+						
+				// pick up the power up
+				if (objectOverlap(ship, asteroid))
+				{
+					ship.hp -= Asteroid.damage;
+					asteroid.visible = false;
+					
+					if (ship.hp < 1000)
+						Assets.getSound("sound/asteroid.wav").play();
+				}
+				else
+				{
+					for (j in 0...asteroids.numChildren)
 					{
-						//asteroid.visible = false;
-						//asteroid2.visible = false;
+						var asteroid2: Asteroid = cast asteroids.getChildAt(j);
+						asteroid.update(dt);
+						
+						if (asteroid.visible == false)
+							continue;
+								
+						// asteroid collision
+						if (asteroid != asteroid2 && objectOverlap(asteroid, asteroid2))
+						{
+							//asteroid.visible = false;
+							//asteroid2.visible = false;
+						}
 					}
 				}
 			}
-		}
+			
+			for (i in 0...bubbles.numChildren)
+			{
+				var bubble: Bubble = cast bubbles.getChildAt(i);
+				bubble.update(dt);
+			}
 		
-		for (i in 0...bubbles.numChildren)
+			ship.update(dt);
+		}
+		else
 		{
-			var bubble: Bubble = cast bubbles.getChildAt(i);
-			bubble.update(dt);
+			tutorialAccelerate.visible = false;
+			tutorialMagnetize.visible = false;
+			hpLabel.visible = false;
+			powerLabel.visible = false;
+			targetPointer.visible = false;
 		}
 		
-		ship.update(dt);
+		if (playAccelerateSound)
+		{
+			if (accelerateSoundChannel == null)
+				accelerateSoundChannel = accelerateSound.play(0, 100000);
+		}
+		else
+		{
+			if (accelerateSoundChannel != null)
+			{
+				accelerateSoundChannel.stop();
+				accelerateSoundChannel = null;
+			}
+		}
+		
+		if (playMagnetizeSound)
+		{
+			if (magnetizeSoundChannel == null)
+				magnetizeSoundChannel = magnetizeSound.play(0, 100000);
+		}
+		else
+		{
+			if (magnetizeSoundChannel != null)
+			{
+				magnetizeSoundChannel.stop();
+				magnetizeSoundChannel = null;
+			}
+		}
 			
 		//this.scrollRect.offset(ship.center.x, 0);
 		//trace(this.scrollRect.x);
 		
 		var offset = ship.center.x >= 500 ? ship.center.x - 500 : 0;
+		if (offset > blackHole.x - baseWidth / 2)
+			offset = blackHole.x - baseWidth / 2;
 		this.scrollRect = new Rectangle(offset, 0, baseWidth, baseHeight);
+		
+		targetPointer.update(offset, blackHole.x);
 	}
 	
 	function objectOverlap(object1: BaseObject, object2: BaseObject)

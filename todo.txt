@@ -1,21 +1,26 @@
 + power decrease on movement
++ tutorial
 + asteroids
-
-- mouse released outside window not noticed
-- object collision response
-- sound looping
-- gui and tutorials are scrolled
-- no win condition
-- no gameplay :D
-
-- sounds:
++ maintain the old speed when magnetizing (add velocity, not override), same for ship
++ sounds:
 	magnetize
 	asteroid collide
 	pick up powerup
 	accelerate
 	lose
 	win
++ sound looping
++ no win condition
++ gui and tutorials are scrolled
 
-- maintain the old speed when magnetizing (add velocity, not override), same for ship
+- mouse released outside window not noticed
+- object collision response
+
+- pointer to target (black hole)
+
+- no gameplay :D
+- acceleration depends on fps ?
+- intro/outro
+- black hole attraction ?
+
 - implement rotationSpeed (now instant)
-- tutorial
