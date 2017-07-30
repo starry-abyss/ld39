@@ -3,10 +3,10 @@
 	<!-- NMML reference: https://gist.github.com/1763850 -->
 	
 	<!-- metadata, make sure 'package' is at least 3 segments (ie. com.mycompany.myproject) -->
-	<meta title="SW" package="SW" version="1.0.0" company="scorched" />
+	<meta title="Crazy Squirrels" package="Crazy Squirrels" version="1.0.0" company="scorched" />
 	
 	<!-- output -->
-	<app main="Main" file="SW" path="bin" />
+	<app main="Main" file="Crazy Squirrels" path="bin" />
 	
 	<window background="#000000" fps="60" />
 	<!--<window width="800" height="480" unless="mobile" />-->
@@ -19,10 +19,10 @@
 	
 	<!-- assets -->
 	<icon path="assets/openfl.svg" />
-	<assets path="assets/img" rename="img" />
+	<assets path="assets/img" rename="img" exclude="*.png~" />
 	<assets path="assets/font" rename="font" />
-	<assets path="assets/music" rename="music" exclude="*.wav" />
-	<assets path="assets/sound" rename="sound" />
+	<assets path="assets/music" rename="music" exclude="*.wav|*.MuProject" />
+	<assets path="assets/sound" rename="sound" exclude="*.lch" />
 	
 	<haxeflag name="-dce no" />
 	

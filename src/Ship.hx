@@ -16,7 +16,7 @@ class Ship extends BaseObject
 	public var power(default, set): Float = 0.0;
 	public var hp(default, set): Float = 100.0;
 		
-	public inline static var powerAcceleration = 1.0; // velocity per 1 unit of power
+	public inline static var powerAcceleration = 3.0; // velocity per 1 unit of power
 	public inline static var powerCost = 50.0; // power waste per second
 	
 	//public var gun: Gun;

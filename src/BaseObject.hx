@@ -13,6 +13,9 @@ class BaseObject extends Sprite
 	public var center(get, null): Point;
 	
 	public var radius(default, null): Float;
+	
+	//public var bounceCoefficient: Float = 1;
+	//public var mass: Float = 1;
 
 	public function new(radius: Float) 
 	{
@@ -53,7 +56,7 @@ class BaseObject extends Sprite
 		speed = Math.abs(speed);
 		
 		direction.normalize(Ship.speed * dt);
-
+		
 		velocity.setTo(velocity.x + sign * direction.x, velocity.y + sign * direction.y);
 	}
 	

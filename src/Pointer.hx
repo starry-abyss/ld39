@@ -54,7 +54,7 @@ class Pointer extends Sprite
 		//multiline = true;
 
 		text.selectable = false;
-		text.text = "Target";
+		text.text = "Destination";
 
 		text.width = 2000;
 		text.height = 100;

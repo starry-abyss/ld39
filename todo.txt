@@ -12,15 +12,21 @@
 + sound looping
 + no win condition
 + gui and tutorials are scrolled
++ handle asteroids, powerups and ship out of screen
++ pointer to target (black hole)
++ no gameplay :D
+
+- ship flashing on power up
+- asteroid particles on destroy
+- improve power and hp indicators (or like damage animations)
+
+- black hole attraction ?
+- destroy asteroids by black hole
+
+- intro/outro/achievement art
 
 - mouse released outside window not noticed
-- object collision response
-
-- pointer to target (black hole)
-
-- no gameplay :D
 - acceleration depends on fps ?
-- intro/outro
-- black hole attraction ?
 
-- implement rotationSpeed (now instant)
+-- implement rotationSpeed (now instant)
+-- object collision response

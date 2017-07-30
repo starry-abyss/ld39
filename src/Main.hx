@@ -18,6 +18,10 @@ import openfl.media.SoundTransform;
 import openfl.text.TextField;
 import openfl.text.TextFormat;
 
+#if js
+	import lime.media.howlerjs.Howler;
+#end
+
 /**
  * ...
  * @author scorched
@@ -27,6 +31,7 @@ class Main extends Sprite
 	var ship: Ship;
 	
 	var time: Float;
+	var respawnAsteroidsTime: Float = 0;
 	
 	//var tempVector: Vector2;
 	var tempPoint: Point;
@@ -38,7 +43,7 @@ class Main extends Sprite
 	public static inline var baseHeight = 480 * 4.0;
 	
 	var gun: Gun;
-	//var stars: Bitmap;
+	var stars: Bitmap;
 	
 	var powerUps: DisplayObjectContainer;
 	var asteroids: DisplayObjectContainer;
@@ -67,10 +72,24 @@ class Main extends Sprite
 	var overlay: Sprite;
 	
 	var targetPointer: Pointer;
+	
+	public static inline var blackHolePos = baseWidth * 4;
+	
+	// percent of asteroids per zone
+	var asteroidZones: Array<Float>;
+	var mapSize: Float;
+	var zoneWidth: Float;
+	var asteroidCount: Int;
 
 	public function new() 
 	{
 		super();
+		
+		// lower volume on browser builds
+#if js
+		//Howler.masterGain = 0.3;
+		//js.html.audio.v
+#end
 		
 		//width = baseWidth;
 		//height = baseHeight;
@@ -81,23 +100,33 @@ class Main extends Sprite
 		musicChannel = music.play(0, 100000);
 		musicChannel.soundTransform = new SoundTransform(0.1);
 		
-		for (i in 0...5)
+		//for (i in 0...5)
 		{
-			var stars = new Bitmap(Assets.getBitmapData("img/stars.png"));
+			/*var*/ stars = new Bitmap(Assets.getBitmapData("img/stars.png"));
 			stars.scaleX = 2;
 			stars.scaleY = 2;
-			stars.x = i * stars.width /** stars.scaleX*/;
-			stars.y = 0;
-			//stage.addChildAt(stars, 0);
-			addChild(stars);
+			//stars.x = i * stars.width /** stars.scaleX*/;
+			//stars.y = 0;
+			stage.addChildAt(stars, 0);
+			//addChild(stars);
 		}
 		
 				
 		blackHole = new BlackHole();
-		blackHole.x = baseWidth * 2;
+		blackHole.x = blackHolePos;
 		blackHole.y = baseHeight / 2 /*- blackHole.height / 2*/;
 		
 		addChild(blackHole);
+		
+		
+		
+		asteroidZones = [0.0, 0.05, 0.10, 0.20, 0.30, 0.35];
+		//new Array<Float>();
+		asteroidCount = 30;
+				
+		mapSize = blackHolePos + baseWidth / 2;
+		zoneWidth = mapSize / asteroidZones.length;
+		
 		
 		
 		powerUps = new DisplayObjectContainer();
@@ -160,7 +189,7 @@ class Main extends Sprite
 		
 		tutorialAccelerate.text = "Hold RMB to accelerate (uses power)";
 		
-		tutorialMagnetize.text = "Aim mouse and hold LMB to magnetize objects";
+		tutorialMagnetize.text = "Aim with mouse and hold LMB to magnetize objects";
 		
 		targetPointer = new Pointer();
 		
@@ -203,15 +232,35 @@ class Main extends Sprite
 		
 		accelerateSound = Assets.getSound("sound/accelerate.wav");
 		magnetizeSound = Assets.getSound("sound/magnetize.wav");
-		
-		restartGame();
-		
+
 		//this.scrollRect = new Rectangle(0, 0, baseWidth, baseHeight);
 		
 		stage.addChild(overlay);
 		
 		cinematic = new Cinematic();
 		overlay.addChild(cinematic);
+		
+		//winGame();
+		
+		// remove intro in debug builds
+#if debug
+		restartGame();
+#else
+		cinematicMode = true;
+		
+		cinematic.reset(restartGame);
+		cinematic.addPage("Jim: Hey, captain! (Left Mouse Button to continue)");
+		cinematic.addPage("Jim: We are running out of power! Squirrels are exhausted!");
+		cinematic.addPage("Cpt.: Damn! Told you squirrel drive is an unreliable thing...");
+		cinematic.addPage("Jim: But I have an idea how to get to Dessertcity!");
+		cinematic.addPage("Jim: We can magnetize the failure recorders drifting around.");
+		cinematic.addPage("Cpt.: And?");
+		cinematic.addPage("Jim: Don't know why, but the squirrels are crazy about them!");
+		cinematic.addPage("Jim: They'll continue working if they get some.");
+		cinematic.addPage("Cpt.: Ugh... Let's try it then.");
+
+		cinematic.nextPage();
+#end
 	}
 	
 	function restartGame(/*lose: Bool = true*/)
@@ -236,6 +285,7 @@ class Main extends Sprite
 		hpLabel.visible = true;
 		powerLabel.visible = true;
 		targetPointer.visible = true;
+		stars.visible = true;
 		
 		tutorialAccelerate.update(0);
 		tutorialMagnetize.update(0);
@@ -262,8 +312,14 @@ class Main extends Sprite
 		cinematicMode = true;
 		
 		cinematic.reset(restartGame);
+		cinematic.addPage("Jim: And we made it!");
+		cinematic.addPage("Cpt.: Jim?");
+		cinematic.addPage("Jim: Yes, sir?");
+		cinematic.addPage("Cpt.: When did you last check the cat stabilizer?");
+		cinematic.addPage("Jim: ...");
 		cinematic.addPage("Made by crazy squirrels in 48 hours for LD 39 jam :-)", "credits");
-		cinematic.addPage("Press LMB to play again!");
+		cinematic.addPage("With OpenFl framework and \"Exo 2\" font by Natanael Gama");
+		cinematic.addPage("Cheers! Press LMB to play again!");
 		cinematic.nextPage();
 		
 		musicChannel.soundTransform = new SoundTransform(0.1);
@@ -277,24 +333,39 @@ class Main extends Sprite
 		powerUps.removeChildren(0, powerUps.numChildren - 1);
 		asteroids.removeChildren(0, asteroids.numChildren - 1);
 
-		for (i in 0...10)
+		// powerups at start screen
+		for (i in 0...20)
 		{
 			var powerUp = new PowerUp();
-			powerUp.x = Math.random() * baseWidth;
+			powerUp.x = Math.random() * baseWidth / 2;
 			powerUp.y = Math.random() * baseHeight;
 			
-			powerUp.velocity.setTo(Math.random() - 0.5, Math.random() - 0.5);
-			powerUp.velocity.normalize(10);
+			//powerUp.velocity.setTo(Math.random() - 0.5, Math.random() - 0.5);
+			//powerUp.velocity.normalize(10);
+			
+			powerUps.addChild(powerUp);
+		}
+		
+		// powerups in the other part of map
+		for (i in 0...40)
+		{
+			var powerUp = new PowerUp();
+			powerUp.x = Math.random() * (mapSize - baseWidth) + baseWidth;
+			powerUp.y = Math.random() * baseHeight;
+			
+			//powerUp.velocity.setTo(Math.random() - 0.5, Math.random() - 0.5);
+			//powerUp.velocity.normalize(10);
 			
 			powerUps.addChild(powerUp);
 		}
 		
 		// start
-		for (i in 0...50)
+		for (x in 0...2)
+		for (y in 0...10)
 		{
 			var asteroid = new Asteroid();
-			asteroid.x = Math.random() * 100;
-			asteroid.y = Math.random() * baseHeight;
+			asteroid.x = x * 250 + (Math.random() - 0.5) * 30 + (y % 3) * 10 - 40;
+			asteroid.y = y * 250 + (Math.random() - 0.5) * 30 + 40 * x - 140;
 			
 			//asteroid.velocity.setTo(Math.random() - 0.5, Math.random() - 0.5);
 			//asteroid.velocity.normalize(10);
@@ -302,14 +373,32 @@ class Main extends Sprite
 			asteroids.addChild(asteroid);
 		}
 		
-		for (i in 0...10)
+		var asteroidsSorted = 0;
+		
+		var asteroidLastNumbers = new Array<Int>();
+		for (i in 0...asteroidZones.length)
+		{
+			var asteroidsInZone = Std.int(asteroidZones[i] * asteroidCount);
+			
+			asteroidLastNumbers[i] = asteroidsSorted + asteroidsInZone;
+			asteroidsSorted += asteroidsInZone;
+		}
+		
+		var zoneNumber = 0;
+		for (i in 0...asteroidCount)
 		{
 			var asteroid = new Asteroid();
-			asteroid.x = Math.random() * baseWidth;
+			
+			if (i >= asteroidLastNumbers[zoneNumber])
+				zoneNumber++;
+			
+			var zoneX = zoneWidth * zoneNumber;
+			
+			asteroid.x = Math.random() * zoneWidth + zoneX;
 			asteroid.y = Math.random() * baseHeight;
 			
-			asteroid.velocity.setTo(Math.random() - 0.5, Math.random() - 0.5);
-			asteroid.velocity.normalize(10);
+			//asteroid.velocity.setTo(Math.random() - 0.5, Math.random() - 0.5);
+			//asteroid.velocity.normalize(10);
 			
 			asteroids.addChild(asteroid);
 			
@@ -384,6 +473,12 @@ class Main extends Sprite
 		
 		overlay.scaleX = this.scaleX;
 		overlay.scaleY = this.scaleY;
+		
+		stars.x = this.x;
+		stars.y = this.y;
+		
+		stars.scaleX = this.scaleX * 2;
+		stars.scaleY = this.scaleY * 2;
 	}
 	
 	function onEnterFrame(_)
@@ -421,7 +516,7 @@ class Main extends Sprite
 			//var x1 = ship.center.x;
 			//var y1 = ship.center.y;
 			
-			if (direction.length > ship.radius)
+			if (direction.length > 0)
 			{
 				ship.rotation = Math.atan2(direction.y, direction.x) * 180 / Math.PI;
 				
@@ -483,7 +578,7 @@ class Main extends Sprite
 					}
 				}
 				
-				if (rightMouseButton /*&& ship.power > 0*/)
+				if (rightMouseButton && ship.power > 0)
 				//if (rightMouseButton)
 				{
 					tutorialAccelerate.update(dt);
@@ -544,8 +639,8 @@ class Main extends Sprite
 				if (asteroid.visible == false)
 					continue;
 						
-				// pick up the power up
-				if (objectOverlap(ship, asteroid))
+				// bump the asteroid
+				if (objectCollide(ship, asteroid, dt))
 				{
 					ship.hp -= Asteroid.damage;
 					asteroid.visible = false;
@@ -560,14 +655,14 @@ class Main extends Sprite
 						var asteroid2: Asteroid = cast asteroids.getChildAt(j);
 						asteroid.update(dt);
 						
-						if (asteroid.visible == false)
+						if (asteroid.visible == false || asteroid2.visible == false)
 							continue;
 								
 						// asteroid collision
-						if (asteroid != asteroid2 && objectOverlap(asteroid, asteroid2))
+						if (asteroid != asteroid2 && objectCollide(asteroid, asteroid2, dt))
 						{
-							//asteroid.visible = false;
-							//asteroid2.visible = false;
+							asteroid.visible = false;
+							asteroid2.visible = false;
 						}
 					}
 				}
@@ -580,6 +675,23 @@ class Main extends Sprite
 			}
 		
 			ship.update(dt);
+			
+			if (ship.x + ship.radius < 0 || ship.x - ship.radius > Main.blackHolePos + Main.baseWidth / 2 || ship.y + ship.radius < 0 || ship.y - ship.radius > Main.baseHeight)
+			{
+				cinematicMode = true;
+					
+				cinematic.reset(restartGame);
+				cinematic.addPage("Achievement unlocked: Curiousity");
+				cinematic.addPage("Press LMB to play again!", "crash");
+				cinematic.nextPage();
+				return;
+			}
+			
+			if (time - respawnAsteroidsTime > 1)
+			{
+				respawnAsteroidsTime = time;
+				respawnAsteroids();
+			}
 		}
 		else
 		{
@@ -588,6 +700,7 @@ class Main extends Sprite
 			hpLabel.visible = false;
 			powerLabel.visible = false;
 			targetPointer.visible = false;
+			stars.visible = false;
 		}
 		
 		if (playAccelerateSound)
@@ -629,14 +742,103 @@ class Main extends Sprite
 		targetPointer.update(offset, blackHole.x);
 	}
 	
-	function objectOverlap(object1: BaseObject, object2: BaseObject)
+	function respawnAsteroids()
+	{
+		var asteroidsNeeded = new Array<Int>();
+		
+		// desired asteroid count per zone
+		for (i in 0...asteroidZones.length)
+		{
+			asteroidsNeeded[i] = Math.floor(asteroidZones[i] * asteroidCount);
+		}
+		
+		// asteroid shortage per zone
+		for (i in 0...asteroids.numChildren)
+		{
+			var asteroid: Asteroid = cast asteroids.getChildAt(i);
+			
+			if (asteroid.visible)
+			{
+				var zoneNumber = Math.floor(asteroid.x / zoneWidth);
+				if (zoneNumber < 0)
+					zoneNumber = 0;
+				if (zoneNumber >= asteroidZones.length)
+					zoneNumber = asteroidZones.length - 1;
+				
+				//trace(zoneNumber, asteroidsNeeded[zoneNumber]);
+				
+				asteroidsNeeded[zoneNumber]--;
+			}
+		}
+		
+		// where the asteroid shortage is maximum
+		var zoneToSpawn = 0;
+		
+		function updateZoneToSpawn()
+		{
+			var maxAsteroidsNeeded = asteroidsNeeded[0];
+			for (i in 1...asteroidZones.length)
+			{
+				if (asteroidsNeeded[i] > maxAsteroidsNeeded)
+				{
+					maxAsteroidsNeeded = asteroidsNeeded[i];
+					zoneToSpawn = i;
+				}
+			}
+		}
+		
+		// respawn asteroids
+		for (i in 0...asteroids.numChildren)
+		{
+			var asteroid: Asteroid = cast asteroids.getChildAt(i);
+			
+			if (!asteroid.visible)
+			{
+				updateZoneToSpawn();
+				
+				// spawn asteroid
+				var zoneX = zoneToSpawn * zoneWidth;
+
+				asteroid.x = Math.random() * zoneWidth + zoneX;
+				
+				var fromTop: Bool = (Math.random() > 0.5);
+				asteroid.y = fromTop ? -asteroid.radius * 9 / 10 : baseHeight + asteroid.radius * 9 / 10;
+			
+				asteroid.velocity.setTo(Math.random() - 0.5, fromTop ? 0.5 : -0.5);
+				asteroid.velocity.normalize(1.0 * zoneToSpawn);
+				
+				asteroid.visible = true;
+				asteroidsNeeded[zoneToSpawn]--;
+			}
+		}
+	}
+	
+	function objectCollide(object1: BaseObject, object2: BaseObject, dt: Float): Bool
+	{
+		var overlap = objectOverlap(object1, object2);
+		
+		if (overlap)
+		{
+			/*var oldVx1 = object1.velocity.x;
+			var oldVy1 = object1.velocity.y;
+			var oldVx2 = object2.velocity.x;
+			var oldVy2 = object2.velocity.y;
+			
+			object1.velocity.setTo(object1.bounceCoefficient * ());
+			object2.velocity.setTo();*/
+		}
+		
+		return overlap;
+	}
+	
+	function objectOverlap(object1: BaseObject, object2: BaseObject): Bool
 	{	
 		var minDistance = object1.radius + object2.radius;
 		var x0 = object1.center.x;
 		var y0 = object1.center.y;
 		var x1 = object2.center.x;
 		var y1 = object2.center.y;
-		
+
 		return Math.sqrt((x0 - x1) * (x0 - x1) + (y0 - y1) * (y0 - y1)) < minDistance;
 	}
 	
@@ -673,7 +875,5 @@ class Main extends Sprite
 		
 		return false;
 	}
-
-	// "Что случилось, штурман? У нас ЧП, капитан! Белки выдохлись. Вот почему я не люблю белковые приводы. И что нам теперь делать? Как добираться до Дессертсити?"
 
 }
