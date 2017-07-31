@@ -3,6 +3,8 @@ package;
 import haxe.Timer;
 import lime.math.Vector2;
 import lime.ui.Mouse;
+import motion.Actuate;
+import motion.easing.Linear;
 import openfl.Assets;
 import openfl.display.Bitmap;
 import openfl.display.DisplayObjectContainer;
@@ -48,6 +50,7 @@ class Main extends Sprite
 	var powerUps: DisplayObjectContainer;
 	var asteroids: DisplayObjectContainer;
 	var bubbles: DisplayObjectContainer;
+	var asteroidParts: DisplayObjectContainer;
 	
 	var powerLabel: TextField;
 	var hpLabel: TextField;
@@ -132,6 +135,7 @@ class Main extends Sprite
 		powerUps = new DisplayObjectContainer();
 		asteroids = new DisplayObjectContainer();
 		bubbles = new DisplayObjectContainer();
+		asteroidParts = new DisplayObjectContainer();
 		
 		for (i in 0...10)
 		{
@@ -139,10 +143,18 @@ class Main extends Sprite
 			bubbles.addChild(bubble);
 		}
 		
+		for (i in 0...100)
+		{
+			var part = new Asteroid();
+			part.visible = false;
+			//part.scaleX = 0.2;
+			//part.scaleY = 0.2;
+			asteroidParts.addChild(part);
+		}
+		
 		addChild(bubbles);
 		addChild(powerUps);
 		addChild(asteroids);
-		
 		
 		gun = new Gun(Main.baseWidth, 70);
 		addChild(gun);
@@ -150,6 +162,8 @@ class Main extends Sprite
 
 		ship = new Ship();
 		addChild(ship);
+		
+		addChild(asteroidParts);
 		
 		stage.addEventListener(Event.RESIZE, onResize);
 		stage.addEventListener(Event.ENTER_FRAME, onEnterFrame);
@@ -250,17 +264,50 @@ class Main extends Sprite
 		
 		cinematic.reset(restartGame);
 		cinematic.addPage("Jim: Hey, captain! (Left Mouse Button to continue)");
-		cinematic.addPage("Jim: We are running out of power! Squirrels are exhausted!");
-		cinematic.addPage("Cpt.: Damn! Told you squirrel drive is an unreliable thing...");
-		cinematic.addPage("Jim: But I have an idea how to get to Dessertcity!");
-		cinematic.addPage("Jim: We can magnetize the failure recorders drifting around.");
-		cinematic.addPage("Cpt.: And?");
-		cinematic.addPage("Jim: Don't know why, but the squirrels are crazy about them!");
-		cinematic.addPage("Jim: They'll continue working if they get some.");
-		cinematic.addPage("Cpt.: Ugh... Let's try it then.");
+		cinematic.addPage("Jim: We are running out of power! Squirrels are exhausted!", "squirrel");
+		cinematic.addPage("Cpt.: Damn! Told you squirrel drive is an unreliable thing...", "squirrel");
+		cinematic.addPage("Jim: But I have an idea how to get to Dessertcity!", "squirrel");
+		cinematic.addPage("Jim: We can magnetize the failure recorders drifting around.", "powerup");
+		cinematic.addPage("Cpt.: And?", "powerup");
+		cinematic.addPage("Jim: Don't know why, but the squirrels are crazy about them!", "powerup");
+		cinematic.addPage("Jim: They'll continue working if they get some.", "powerup");
+		cinematic.addPage("Cpt.: Ugh... Let's try it then.", "powerup");
 
 		cinematic.nextPage();
 #end
+	}
+	
+	public function asteroidBreak(asteroid: Asteroid)
+	{
+		function emit(asteroid: Asteroid, part: Asteroid)
+		{
+			part.visible = true;
+			
+			part.x = asteroid.x;
+			part.y = asteroid.y;
+			
+			part.scaleX = 0.5;
+			part.scaleY = 0.5;
+		
+			Actuate.tween(part, (Math.random() + 0.5) * 2, { scaleX: 0, scaleY: 0 }).ease(Linear.easeNone).onComplete(function () part.visible = false);
+
+			part.velocity.setTo((Math.random() - 0.5) * 400, (Math.random() - 0.5) * 400);
+		}
+		
+		var maxEmit = 10;
+		for (i in 0...asteroidParts.numChildren)
+		{
+			if (maxEmit <= 0)
+				break;
+				
+			var part: Asteroid = cast asteroidParts.getChildAt(i);
+			if (!part.visible)
+			{	
+				--maxEmit;
+				emit(asteroid, part);
+			}
+		}
+
 	}
 	
 	function restartGame(/*lose: Bool = true*/)
@@ -282,7 +329,15 @@ class Main extends Sprite
 			
 		}*/
 		
-		hpLabel.visible = true;
+		for (i in 0...asteroidParts.numChildren)
+		{
+			var part: Asteroid = cast asteroidParts.getChildAt(i);
+			part.visible = false;
+		}
+		
+		hpLabel.visible = false;
+		//hpLabel.visible = true;
+		powerLabel.x = 20;
 		powerLabel.visible = true;
 		targetPointer.visible = true;
 		stars.visible = true;
@@ -293,6 +348,7 @@ class Main extends Sprite
 		// quick hack for asteroids spawning at player at start
 		ship.hp = 10000.0;
 		ship.x = 500;
+		//ship.x = blackHole.x + 400;
 		ship.y = baseHeight / 2;
 		leftMouseButton = false;
 		rightMouseButton = false;
@@ -312,13 +368,13 @@ class Main extends Sprite
 		cinematicMode = true;
 		
 		cinematic.reset(restartGame);
-		cinematic.addPage("Jim: And we made it!");
-		cinematic.addPage("Cpt.: Jim?");
-		cinematic.addPage("Jim: Yes, sir?");
-		cinematic.addPage("Cpt.: When did you last check the cat stabilizer?");
-		cinematic.addPage("Jim: ...");
+		cinematic.addPage("Jim: And we made it!", "win");
+		cinematic.addPage("Cpt.: Jim?", "win");
+		cinematic.addPage("Jim: Yes, sir?", "win");
+		cinematic.addPage("Cpt.: When did you last check the cat stabilizer?", "win");
+		cinematic.addPage("Jim: ...", "win");
 		cinematic.addPage("Made by crazy squirrels in 48 hours for LD 39 jam :-)", "credits");
-		cinematic.addPage("With OpenFl framework and \"Exo 2\" font by Natanael Gama");
+		cinematic.addPage("With OpenFl framework and \"Exo 2\" font by Natanael Gama", "credits");
 		cinematic.addPage("Cheers! Press LMB to play again!");
 		cinematic.nextPage();
 		
@@ -339,6 +395,9 @@ class Main extends Sprite
 			var powerUp = new PowerUp();
 			powerUp.x = Math.random() * baseWidth / 2;
 			powerUp.y = Math.random() * baseHeight;
+			
+			if (objectOverlap(ship, powerUp))
+				powerUp.x += 300;
 			
 			//powerUp.velocity.setTo(Math.random() - 0.5, Math.random() - 0.5);
 			//powerUp.velocity.normalize(10);
@@ -369,6 +428,8 @@ class Main extends Sprite
 			
 			//asteroid.velocity.setTo(Math.random() - 0.5, Math.random() - 0.5);
 			//asteroid.velocity.normalize(10);
+			
+			asteroid.mainSprite = this;
 			
 			asteroids.addChild(asteroid);
 		}
@@ -640,10 +701,16 @@ class Main extends Sprite
 					continue;
 						
 				// bump the asteroid
-				if (objectCollide(ship, asteroid, dt))
+				/*if (objectOverlap(blackHole, asteroid))
+				{
+					asteroid.visible = false;
+				}
+				else*/ if (objectCollide(ship, asteroid, dt))
 				{
 					ship.hp -= Asteroid.damage;
 					asteroid.visible = false;
+					
+					asteroidBreak(asteroid);
 					
 					if (ship.hp < 1000)
 						Assets.getSound("sound/asteroid.wav").play();
@@ -663,6 +730,9 @@ class Main extends Sprite
 						{
 							asteroid.visible = false;
 							asteroid2.visible = false;
+							
+							asteroidBreak(asteroid);
+							asteroidBreak(asteroid2);
 						}
 					}
 				}
@@ -673,15 +743,23 @@ class Main extends Sprite
 				var bubble: Bubble = cast bubbles.getChildAt(i);
 				bubble.update(dt);
 			}
+			
+			for (i in 0...asteroidParts.numChildren)
+			{
+				var part: Asteroid = cast asteroidParts.getChildAt(i);
+				part.update(dt);
+			}
 		
 			ship.update(dt);
+			gun.update(dt);
+			blackHole.update(dt);
 			
 			if (ship.x + ship.radius < 0 || ship.x - ship.radius > Main.blackHolePos + Main.baseWidth / 2 || ship.y + ship.radius < 0 || ship.y - ship.radius > Main.baseHeight)
 			{
 				cinematicMode = true;
 					
 				cinematic.reset(restartGame);
-				cinematic.addPage("Achievement unlocked: Curiousity");
+				cinematic.addPage("Achievement unlocked: Curiousity", "curiosity");
 				cinematic.addPage("Press LMB to play again!", "crash");
 				cinematic.nextPage();
 				return;

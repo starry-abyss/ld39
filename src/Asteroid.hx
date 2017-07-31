@@ -9,6 +9,7 @@ import openfl.display.Bitmap;
  */
 class Asteroid extends BaseObject 
 {
+	public var mainSprite: Main = null;
 
 	public inline static var speed = 200.0;
 	public inline static var damage = 22.0;
@@ -37,9 +38,19 @@ class Asteroid extends BaseObject
 			x += velocity.x * dt;
 			y += velocity.y * dt;
 			
+			// out of screen
 			if (x + radius < 0 || x - radius > Main.blackHolePos + Main.baseWidth / 2 || y + radius < 0 || y - radius > Main.baseHeight)
 			{
 				visible = false;
+			}
+			
+			// in black hole
+			if (Math.abs(x - Main.blackHolePos) < 500 && Math.abs(y - Main.baseHeight / 2) < 500)
+			{
+				visible = false;
+				
+				if (mainSprite != null)
+					mainSprite.asteroidBreak(this);
 			}
 		}
 	}

@@ -15,18 +15,19 @@
 + handle asteroids, powerups and ship out of screen
 + pointer to target (black hole)
 + no gameplay :D
++ destroy asteroids by black hole
++ intro/outro/achievement art
++ asteroid particles on destroy
+
+-+ improve power and hp indicators (or like damage animations)
+
+- decrease volume on HTML5
 
 - ship flashing on power up
-- asteroid particles on destroy
-- improve power and hp indicators (or like damage animations)
-
-- black hole attraction ?
-- destroy asteroids by black hole
-
-- intro/outro/achievement art
 
 - mouse released outside window not noticed
 - acceleration depends on fps ?
 
+-- black hole attraction ?
 -- implement rotationSpeed (now instant)
 -- object collision response

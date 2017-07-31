@@ -3,6 +3,8 @@ import openfl.Assets;
 import openfl.display.Bitmap;
 import openfl.display.BitmapData;
 import openfl.display.Sprite;
+import openfl.filters.BlurFilter;
+import openfl.filters.GlowFilter;
 import openfl.text.TextField;
 import openfl.text.TextFormat;
 
@@ -103,6 +105,8 @@ class Cinematic extends Sprite
 		
 		addChild(image);
 		addChild(text);
+		
+		//image.filters = [ new GlowFilter(0xffffffff, 1, 4, 4) ];
 	}
 	
 }

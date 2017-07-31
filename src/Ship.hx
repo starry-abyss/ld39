@@ -2,6 +2,7 @@ package;
 
 import openfl.Assets;
 import openfl.display.Bitmap;
+import openfl.display.BitmapData;
 import openfl.display.Sprite;
 
 /**
@@ -23,6 +24,8 @@ class Ship extends BaseObject
 	public var powerChangedCallback: Void->Void;
 	public var hpChangedCallback: Void->Void;
 	
+	var decals: Array<Bitmap>;
+	
 	function set_power(value: Float)
 	{
 		power = value > 0 ? value : 0;
@@ -36,17 +39,37 @@ class Ship extends BaseObject
 		hpChangedCallback();
 		return hp;
 	}
-
-	public function new() 
+	
+	function addBitmap(bitmapData: BitmapData): Bitmap
 	{
-		var bitmapData = Assets.getBitmapData("img/ship.png");
-		
-		super(bitmapData.width / 2);
-		
 		var bitmap = new Bitmap(bitmapData);
 		bitmap.x -= bitmapData.width / 2;
 		bitmap.y -= bitmapData.height / 2;
 		addChild(bitmap);
+		
+		return bitmap;
+	}
+
+	public function new() 
+	{
+		decals = new Array<Bitmap>();
+		
+		var bitmapData = Assets.getBitmapData("img/ship.png");
+		
+		super(bitmapData.width / 2);
+		
+		addBitmap(bitmapData);
+		
+		for (i in 1...5)
+		{
+			decals[i] = addBitmap(Assets.getBitmapData('img/decals/decal$i.png'));
+			decals[i].visible = (i == 4);
+		}
+		
+		/*var bitmap = new Bitmap(bitmapData);
+		bitmap.x -= bitmapData.width / 2;
+		bitmap.y -= bitmapData.height / 2;
+		addChild(bitmap);*/
 		
 		//gun = new Gun(Main.baseWidth, 100);
 		//gun.x -= bitmapData.width / 2;
@@ -59,6 +82,30 @@ class Ship extends BaseObject
 	{
 		x += velocity.x * dt;
 		y += velocity.y * dt;
+
+		if (hp < 30)
+		{
+			decals[4].visible = false;
+		}
+		else if (hp < 45)
+		{
+			decals[3].visible = true;
+		}
+		else if (hp < 60)
+		{
+			decals[2].visible = true;
+		}
+		else if (hp < 80)
+		{
+			decals[1].visible = true;
+		}
+		else
+		{
+			decals[1].visible = false;
+			decals[2].visible = false;
+			decals[3].visible = false;
+			decals[4].visible = true;
+		}
 	}
 	
 	override function get_center()

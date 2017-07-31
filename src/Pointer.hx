@@ -75,7 +75,7 @@ class Pointer extends Sprite
 	
 	public function update(scrollX: Float, holeX: Float)
 	{
-		var offset = 300;
+		var offset = 480;
 
 		if (scrollX + Main.baseWidth < holeX)
 		{
